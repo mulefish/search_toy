@@ -1,3 +1,13 @@
+"""
+Inspect semantic distances between free-text queries and the stored
+product embeddings in the SQLite database.
+
+- Load all rows from search_embedding and get the vectors
+- Load the sentence-transformer model all-MiniLM-L6-v2 : This takes a little bit of time
+- For each query find the cosine similarity to every embedding: closest match is the best match
+- TODO: maybe if 0.1 or less is the 'closest' then that ain't very close at all
+"""
+
 import json
 import sqlite3
 import time
@@ -5,6 +15,7 @@ from pathlib import Path
 from typing import Iterable, List, Tuple
 import numpy as np
 from sentence_transformers import SentenceTransformer
+from Verdict import verdict
 
 BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_DB = BASE_DIR / "db.sqlite3"
@@ -12,13 +23,6 @@ MODEL_NAME = "all-MiniLM-L6-v2"
 
 
 def load_products_and_vectors(db_path: Path = DEFAULT_DB) -> Tuple[List[Tuple[int, str, str]], np.ndarray]:
-    """
-    Load items and their embedding vectors from the search_embedding table.
-
-    Returns:
-        products: list of (id, name, category)
-        vectors:  N x D numpy array of embeddings
-    """
     conn = sqlite3.connect(db_path)
     try:
         cur = conn.cursor()
@@ -53,37 +57,22 @@ def compute_distances(
     query: str,
     embeddings: np.ndarray,
 ) -> np.ndarray:
-    """
-    Compute cosine similarity and distance from query to each embedding.
-
-    Returns an array of shape (N,) with similarity scores.
-    Distance is simply 1 - similarity.
-    """
     query_vec = model.encode(query, convert_to_numpy=True)
     return embeddings @ query_vec
     
-def print_ranked_results(
+def rank_the_results(
     query: str,
     products: Iterable[Tuple[int, str, str]],
     sims: np.ndarray,
-) -> None:
+) -> Tuple[str, float, float]:
 
     indexed = list(zip(products, sims))
-    # Sort by best match first: highest similarity (lowest distance)
     indexed.sort(key=lambda x: x[1], reverse=True)
 
-    # Best match as its own variable
     (best_id, best_name, best_category), best_sim = indexed[0]
     best_distance = 1.0 - float(best_sim)
-    print(
-        f"BEST: [{best_id:02d}] {best_name} ({best_category})  "
-        f"similarity={best_sim:.4f}  distance={best_distance:.4f}"
-    )
 
-    # print("\nAll results:")
-    # for (row_id, name, category), sim in indexed:
-    #     distance = 1.0 - float(sim)
-    #     print(f"[{row_id:02d}] {name} ({category})  similarity={sim:.4f}  distance={distance:.4f}")
+    return best_name, float(best_sim), best_distance
 
 
 def main() -> None:
@@ -99,14 +88,19 @@ def main() -> None:
     m1 = time.perf_counter()
     print(f"Model loaded in {(m1 - m0):.3f}s\n")
 
-    inputs_from_user = ["I would like to relax", "Reuben kicked his donkey", "2+2=0","Pick up the pace!"]
+    inputs_from_user = {
+        "I would like to relax":"Indica Reverie", 
+        "Reuben kicked his donkey":"Nothing found", 
+        "2+2=0":"Nothing found", 
+        "Pick up the pace!":"Hybrid Flux"
+    }
 
-    for query in inputs_from_user:
+    for query, expected in inputs_from_user.items():
         q0 = time.perf_counter()
         sims = compute_distances(model, query, embeddings)
         q1 = time.perf_counter()
-        print(f"\nComputed similarities for '{query}' in {(q1 - q0):.4f}s")
-        print_ranked_results(query, products, sims)
+        best_match, similarity, distance = rank_the_results(query, products, sims)
+        verdict(expected, best_match, f"Query: '{query}' similarity={similarity:.4f} distance={distance:.4f} found={best_match}")
     print("\n")
 
 

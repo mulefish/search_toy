@@ -1,6 +1,7 @@
 """
-Utility to create/refresh the SQLite database with sample Item rows
-and their embedding vectors for semantic search.
+Create or refresh the SQLite database with:
+- A search_item table seeded with sample hype-text records.
+- A search_embedding table that stores one embedding vector per item
 """
 
 import argparse
@@ -58,7 +59,6 @@ def init_db(db_path: Path) -> None:
     conn = sqlite3.connect(db_path)
     try:
         with conn:
-            # Base item table
             conn.execute("DROP TABLE IF EXISTS search_item;")
             conn.execute(
                 """
@@ -78,7 +78,6 @@ def init_db(db_path: Path) -> None:
             )
             print("search_item table created and populated")
 
-            # Embedding table
             conn.execute("DROP TABLE IF EXISTS search_embedding;")
             conn.execute(
                 """
@@ -95,7 +94,6 @@ def init_db(db_path: Path) -> None:
             )
             print("search_embedding table created")
 
-        # Generate embeddings outside the transaction block
         model = SentenceTransformer(MODEL_NAME)
         texts = [f"{name}. {description}" for name, description, _ in ITEMS]
         embeddings = model.encode(texts, convert_to_numpy=True)
@@ -137,7 +135,6 @@ def main() -> None:
 
     args.db.parent.mkdir(parents=True, exist_ok=True)
     init_db(args.db)
-    #print(f"Database ready at {args.db}")
 
 
 if __name__ == "__main__":
