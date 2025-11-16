@@ -1,0 +1,22 @@
+.venv/
+env/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.DS_Store
+
+# Local settings and environment
+.env
+*.env
+
+# SQLite databases
+db.sqlite3
+myproject/db.sqlite3
+
+# Django static/media (if generated)
+staticfiles/
+media/
+

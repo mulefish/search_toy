@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Search Items</title>
+    <style>
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Search Catalog</h1>
+      <form id="search-form">
+        csrf_token: 
+        {% csrf_token %}
+        <hr/>
+        <input id="query" type="text" placeholder="Search by name, description, or category" autocomplete="off" />
+        <button type="submit">Search</button>
+      </form>
+      <p id="status-text">Try searching for a flavor, effect, or category keyword.</p>
+      <section id="results"></section>
+    </main>
+    <script>
+      const form = document.getElementById("search-form");
+      const queryInput = document.getElementById("query");
+      const resultsEl = document.getElementById("results");
+      const statusText = document.getElementById("status-text");
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const query = queryInput.value.trim();
+        if (!query) {
+          statusText.textContent = "Type something to search.";
+          resultsEl.innerHTML = "";
+          return;
+        }
+
+        statusText.textContent = "Searching…";
+        resultsEl.innerHTML = "";
+
+        try {
+          const response = await fetch("{% url 'search:api-search' %}", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": getCookie("csrftoken"),
+            },
+            body: JSON.stringify({ query }),
+          });
+          const data = await response.json();
+          renderResults(query, data);
+        } catch (error) {
+          console.error(error);
+          statusText.textContent = "Something went wrong. Please try again.";
+        }
+      });
+
+      function renderResults(query, payload) {
+        const { results = [], match_count = 0, message } = payload;
+        if (message && results.length === 0) {
+          statusText.textContent = message;
+          return;
+        }
+
+        statusText.innerHTML = `${match_count} result${match_count === 1 ? "" : "s"} for "<strong>${query}</strong>"`;
+
+        if (!results.length) {
+          resultsEl.innerHTML = "<p>No items matched your search.</p>";
+          return;
+        }
+
+        resultsEl.innerHTML = results
+          .map(
+            (item) => `
+            <article class="card">
+              <div class="category">${item.category}</div>
+              <h2>${item.name}</h2>
+              <p>${item.description}</p>
+            </article>
+          `
+          )
+          .join("");
+      }
+
+      function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(";").shift();
+        return "";
+      }
+    </script>
+  </body>
+</html>
+
