@@ -10,7 +10,20 @@ class Item(models.Model):
 
     class Meta:
         ordering = ['name']
+        db_table = 'search_item'
 
     def __str__(self) -> str:
         return self.name
+
+
+class ItemDetails(models.Model):
+    name = models.CharField(max_length=120)
+    number = models.FloatField()
+    json_string = models.TextField()
+
+    class Meta:
+        db_table = 'search_item_details'
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.number})"
 

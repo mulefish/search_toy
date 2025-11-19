@@ -29,7 +29,7 @@ ITEMS = [
     ),
     (
         "Hybrid Flux",
-        "Hybrid splices the genetics of hustle and hush, letting you toggle between brainstorm brilliance and after-hours bliss with a single smooth inhale. It’s the Swiss Army buzz—boardroom presentable one minute, fire-pit stories the next—keeping your vibe cruising on adaptive cruise control no matter how the day rearranges itself.",
+        "Hybrid splices the genetics of hustle and hush, letting you toggle between brainstorm brilliance and after-hours bliss with a single smooth inhale. It's the Swiss Army buzz—boardroom presentable one minute, fire-pit stories the next—keeping your vibe cruising on adaptive cruise control no matter how the day rearranges itself.",
         "Hybrid",
     ),
     (
@@ -39,7 +39,7 @@ ITEMS = [
     ),
     (
         "Pre-Roll Ember",
-        "Pre-rolls roll out concierge convenience, artisan-packed cones that spark evenly and unfurl luxury smoke trails wherever the night takes you. Slide a tube into your pocket and you’re packing a mobile lounge—perfectly ground flower, slow-burning papers, and a vibe that says you paid attention to the finer details.",
+        "Pre-rolls roll out concierge convenience, artisan-packed cones that spark evenly and unfurl luxury smoke trails wherever the night takes you. Slide a tube into your pocket and you're packing a mobile lounge—perfectly ground flower, slow-burning papers, and a vibe that says you paid attention to the finer details.",
         "Pre-roll",
     ),
     (
@@ -49,9 +49,19 @@ ITEMS = [
     ),
     (
         "Pre-Rolls Duo",
-        "Pre-rolls pair up in twin packs for co-op adventures, sharing boutique flower that burns clean, smells like a terpene boutique, and keeps the vibe synchronized from first spark to final ash. Whether you’re matching cones with a friend or saving one for later, each wrap feels like a pocket-sized house party.",
+        "Pre-rolls pair up in twin packs for co-op adventures, sharing boutique flower that burns clean, smells like a terpene boutique, and keeps the vibe synchronized from first spark to final ash. Whether you're matching cones with a friend or saving one for later, each wrap feels like a pocket-sized house party.",
         "Pre-rolls",
     ),
+]
+
+ITEMS_DETAILS = [
+    ("Indica Reverie", 1, "{'something': 'something else'}"),
+    ("Sativa Voltage", 2, "{'something': 'something else'}"),
+    ("Hybrid Flux", 3, "{'something': 'something else'}"),
+    ("Wax Prism", 4, "{'something': 'something else'}"),
+    ("Pre-Roll Ember", 50, "{'something': 'something else'}"),
+    ("Gummy Aurora", 66, "{'something': 'something else'}"),
+    ("Pre-Rolls Duo", 77.77, "{'something': 'something else'}"),
 ]
 
 
@@ -93,6 +103,23 @@ def init_db(db_path: Path) -> None:
                 """
             )
             print("search_embedding table created")
+
+            conn.execute("DROP TABLE IF EXISTS search_item_details;")
+            conn.execute(
+                """
+                CREATE TABLE search_item_details (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    number REAL NOT NULL,
+                    json_string TEXT NOT NULL
+                );
+                """
+            )
+            conn.executemany(
+                "INSERT INTO search_item_details (name, number, json_string) VALUES (?, ?, ?);",
+                ITEMS_DETAILS,
+            )
+            print("search_item_details table created and populated")
 
         model = SentenceTransformer(MODEL_NAME)
         texts = [f"{name}. {description}" for name, description, _ in ITEMS]

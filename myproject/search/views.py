@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from sentence_transformers import SentenceTransformer
 
-from .models import Item
+from .models import Item, ItemDetails
 from .serializers import ItemSerializer
 
 
@@ -79,11 +79,15 @@ class SearchAPIView(APIView):
 
         item_ids = [item_id for (item_id, _, _), _ in indexed]
         items_dict = {item.id: item for item in Item.objects.filter(id__in=item_ids)}
+        
+        item_names = [item.name for item in items_dict.values()]
+        details_dict = {details.name: details for details in ItemDetails.objects.filter(name__in=item_names)}
 
         results = []
         for (item_id, _, _), sim in indexed:
             if item_id in items_dict:
                 item = items_dict[item_id]
+                item.item_details = details_dict.get(item.name)
                 serializer = ItemSerializer(item)
                 result = serializer.data
                 result['similarity'] = float(sim)
