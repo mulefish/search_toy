@@ -76,6 +76,10 @@
               <div class="category">${item.category}</div>
               <h2>${item.name}</h2>
               <p>${item.description}</p>
+              <div style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;">
+                Similarity: ${item.similarity ? item.similarity.toFixed(4) : 'N/A'} | 
+                Distance: ${item.distance ? item.distance.toFixed(4) : 'N/A'}
+              </div>
             </article>
           `
           )
